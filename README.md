@@ -4,7 +4,7 @@ A modern React flight search application with integration to the Sabre API for a
 
 ## Quick Demo
 
-Check out the quick demo video of the application in action: [Watch Demo](https://drive.google.com/file/d/1K6MGu9XjyXXjGaSdi-12JlfHGGP1o0uA/view?usp=sharing)
+Check out the quick demo video of the application in action: [Watch Demo](https://drive.google.com/file/d/1JaxBCi8wQBi9r_MkBwCJCcHuCCdpTwdX/view?usp=sharing)
 
 ## Features
 
@@ -127,7 +127,7 @@ src/
 
 ## 10-Hour Implementation Plan
 
-Here is a detailed breakdown of the development process, estimated to take 10 hours:
+Here is a detailed breakdown of the development process, estimated to take 13 hours:
 
 - **Hour 1: Project Setup & Configuration (1 hour)**
   - Initialize React project with Vite and TypeScript.
@@ -141,14 +141,14 @@ Here is a detailed breakdown of the development process, estimated to take 10 ho
   - Build `PassengerSelector` component for managing adults, children, and infants.
   - Develop `SearchButton` component with loading and disabled states.
 
-- **Hour 4-5: API Integration & State Management (2 hours)**
+- **Hour 4-5: API Integration & State Management (3 hours)**
   - Set up Redux Toolkit store and an `airportSlice`.
   - Create an API service using Axios to fetch airport data from the Sabre API.
   - Implement the `AirportSelect` component with searchable dropdowns.
   - Dispatch async thunks to fetch and populate airport data into the Redux store.
   - Handle loading and error states for the API call within the slice.
 
-- **Hour 6-7: Main View & Form Logic (2 hours)**
+- **Hour 6-7: Main View & Form Logic (3 hours)**
   - Assemble the main `FlightSearchForm.tsx` view by combining all the smaller components.
   - Implement the main form logic using React Hooks (`useState`, `useSelector`, `useDispatch`).
   - Add form validation to ensure all required fields are filled.
@@ -165,7 +165,7 @@ Here is a detailed breakdown of the development process, estimated to take 10 ho
   - Simulate a search action and display a summary of the selected criteria.
   - Refine state management for search status (e.g., `searching`, `succeeded`, `failed`).
 
-- **Hour 10: Final Touches & Documentation (1 hour)**
+- **Hour 10: Final Touches & Documentation (2 hour)**
   - Write unit tests for key components and Redux logic.
   - Perform final testing and bug fixes.
   - Write and finalize the `README.md` documentation.
