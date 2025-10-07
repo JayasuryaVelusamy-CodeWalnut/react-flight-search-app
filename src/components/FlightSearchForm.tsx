@@ -86,14 +86,20 @@ const FlightSearchForm: React.FC = () => {
         </div>
       )}
       {isLoading ? (
-        <div className="bg-white rounded-xl shadow-md p-6 max-w-6xl w-full flex justify-center">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full flex justify-center">
           <div className="text-gray-600">Loading airports...</div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-md flex items-center divide-x divide-gray-200 max-w-6xl w-full">
-          <div className="px-4 py-4 flex flex-col">
+        <form
+          className="bg-white rounded-xl shadow-lg flex flex-col lg:flex-row lg:items-center divide-y lg:divide-y-0 lg:divide-x divide-gray-200 w-full"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearch();
+          }}
+        >
+          <div className="p-4 flex flex-col w-full lg:w-auto">
             <label htmlFor="trip-type" className="text-gray-500 text-sm font-medium">Trip</label>
-            <select 
+            <select
               id="trip-type"
               className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
               value={searchCriteria.tripType}
@@ -108,7 +114,7 @@ const FlightSearchForm: React.FC = () => {
             </select>
           </div>
 
-          <div className="px-6 py-4">
+          <div className="p-4 w-full lg:w-auto">
             <AirportSelect
               label="From"
               value={searchCriteria.origin}
@@ -117,7 +123,7 @@ const FlightSearchForm: React.FC = () => {
             />
           </div>
 
-          <div className="px-6 py-4">
+          <div className="p-4 w-full lg:w-auto">
             <AirportSelect
               label="To"
               value={searchCriteria.destination}
@@ -128,8 +134,8 @@ const FlightSearchForm: React.FC = () => {
             />
           </div>
 
-          <div className="px-6 py-4 flex items-center gap-4">
-            <div className="flex flex-col">
+          <div className="px-6 py-4 flex flex-col md:flex-row items-center gap-4">
+            <div className="flex flex-col w-full md:w-auto">
               <label htmlFor="depart-date" className="text-gray-500 text-sm font-medium">Depart</label>
               <DatePicker
                 id="depart-date"
@@ -150,7 +156,7 @@ const FlightSearchForm: React.FC = () => {
             </div>
 
             {searchCriteria.tripType === 'return' && (
-              <div className="flex flex-col">
+              <div className="flex flex-col w-full md:w-auto">
                 <label htmlFor="return-date" className="text-gray-500 text-sm font-medium">Return</label>
                 <DatePicker
                   id="return-date"
@@ -195,9 +201,9 @@ const FlightSearchForm: React.FC = () => {
             )}
           </div>
 
-          <div className="px-4">
+          <div className="p-4 lg:px-4 w-full lg:w-auto">
             <button 
-              className="bg-[#0061ff] hover:bg-[#0051d1] text-white font-semibold rounded-xl px-6 py-3 transition disabled:opacity-50"
+              className="bg-[#0061ff] hover:bg-[#0051d1] text-white font-semibold rounded-xl px-6 py-3 transition disabled:opacity-50 w-full"
               onClick={handleSearch}
               disabled={!searchCriteria.origin || !searchCriteria.destination || 
                        (searchCriteria.tripType === 'return' && !searchCriteria.returnDate)}
@@ -205,12 +211,12 @@ const FlightSearchForm: React.FC = () => {
               Search
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {showSummary && (
         <div className="bg-white rounded-xl shadow-md p-6 max-w-6xl w-full">
-          <div className="grid grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div>
               <p className="text-sm text-gray-500">Trip Type</p>
               <p className="font-semibold capitalize">
