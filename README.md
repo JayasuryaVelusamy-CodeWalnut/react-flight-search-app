@@ -4,7 +4,7 @@ A modern React flight search application with integration to the Sabre API for a
 
 ## Quick Demo
 
-Check out the quick demo video of the application in action: [Watch Demo](https://drive.google.com/file/d/1JaxBCi8wQBi9r_MkBwCJCcHuCCdpTwdX/view?usp=sharing)
+Check out the quick demo video of the application in action: [Watch Demo](https://drive.google.com/file/d/1e-4fpeaxcyRrVciym9fhft5mFNlUE0ho/view?usp=sharing)
 
 ## Features
 
