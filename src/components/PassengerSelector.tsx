@@ -1,16 +1,18 @@
-import React from 'react';
+import { forwardRef } from 'react';
 import type { Passenger } from '../types/Flight';
+import Button from './Button';
 
-interface PassengerSelectorProps {
-  value: Passenger;
+export interface PassengerSelectorProps {
+  passengers: Passenger;
   onChange: (passengers: Passenger) => void;
 }
 
-const PassengerSelector: React.FC<PassengerSelectorProps> = ({ value, onChange }) => {
+const PassengerSelector = forwardRef<HTMLDivElement, PassengerSelectorProps>(
+  ({ passengers, onChange }, ref) => {
   const handleChange = (type: keyof Passenger, operation: 'increment' | 'decrement') => {
     const newValue = {
-      ...value,
-      [type]: operation === 'increment' ? value[type] + 1 : Math.max(0, value[type] - 1)
+      ...passengers,
+      [type]: operation === 'increment' ? passengers[type] + 1 : Math.max(0, passengers[type] - 1)
     };
     onChange(newValue);
   };
@@ -22,7 +24,15 @@ const PassengerSelector: React.FC<PassengerSelectorProps> = ({ value, onChange }
   ];
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-lg">
+    <div
+      ref={ref}
+      className="p-4 bg-white rounded-lg shadow-lg"
+      role="group"
+      aria-labelledby="passenger-selector-heading"
+    >
+      <h2 id="passenger-selector-heading" className="sr-only">
+        Select Passengers
+      </h2>
       <div className="space-y-4">
         {passengerTypes.map(({ id, label, description }) => (
           <div key={id} className="flex items-center justify-between">
@@ -31,37 +41,37 @@ const PassengerSelector: React.FC<PassengerSelectorProps> = ({ value, onChange }
               <p className="text-xs text-gray-500">{description}</p>
             </div>
             <div className="flex items-center gap-3">
-              <button
+              <Button
+                variant="icon"
                 onClick={() => handleChange(id, 'decrement')}
-                disabled={id === 'adults' ? value[id] <= 1 : value[id] <= 0}
-                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 disabled:opacity-50"
+                disabled={id === 'adults' ? passengers[id] <= 1 : passengers[id] <= 0}
                 aria-label={`Decrement ${label}`}
                 aria-controls={`${id}-count`}
               >
                 -
-              </button>
-              <span 
+              </Button>
+              <span
                 id={`${id}-count`}
-                className="w-8 text-center" 
+                className="w-8 text-center"
                 aria-live="polite"
                 aria-atomic="true"
               >
-                {value[id]}
+                {passengers[id]}
               </span>
-              <button
+              <Button
+                variant="icon"
                 onClick={() => handleChange(id, 'increment')}
-                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600"
                 aria-label={`Increment ${label}`}
                 aria-controls={`${id}-count`}
               >
                 +
-              </button>
+              </Button>
             </div>
           </div>
         ))}
       </div>
     </div>
   );
-};
+});
 
 export default PassengerSelector;

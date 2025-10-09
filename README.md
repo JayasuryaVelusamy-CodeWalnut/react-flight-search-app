@@ -72,12 +72,21 @@ npm run test
 
 ```
 src/
+├── assets/
+│   └── react.svg               # React logo
 ├── components/
 │   ├── AirportSelect.tsx       # Airport selection dropdown
+│   ├── Button.tsx              # Reusable button component
 │   ├── ErrorBoundary.tsx       # Error handling component
 │   ├── FlightSearchForm.tsx    # Main search form component
 │   ├── Header.tsx              # Application header
-│   └── PassengerSelector.tsx   # Passenger count selector
+│   ├── PassengerSelector.tsx   # Passenger count selector
+│   ├── Portal.tsx              # Portal for modals and popovers
+│   └── Skeleton.tsx            # Skeleton loader for loading states
+├── hooks/
+│   ├── useClickOutside.ts      # Hook for detecting clicks outside an element
+│   ├── useFetchAirports.ts     # Hook for fetching airport data
+│   └── useFlightSearchForm.ts  # Hook for managing flight search form state
 ├── services/
 │   └── airportService.ts       # API service for Sabre integration
 ├── store/
@@ -92,7 +101,9 @@ src/
 │   ├── format.ts               # Formatting utility functions
 │   └── memoize.ts              # Memoization utility
 ├── App.tsx                     # Main app component
-└── main.tsx                    # App entry point
+├── main.tsx                    # App entry point
+├── index.css                   # Global CSS styles
+└── App.css                     # App-specific CSS styles
 ```
 
 ## Technical Details
@@ -103,7 +114,7 @@ src/
 - **Styling**: Tailwind CSS
 - **State Management**: Redux Toolkit
 - **HTTP Client**: Axios
-- **Testing**: Jest, React Testing Library
+- **Testing**: Jest, React Testing Library, Jest DOM, User Event
 - **UI Implementation**: Custom designed and implemented without Figma or design mockups, focusing on modern UI/UX principles and best practices
 
 ## Development Notes
@@ -127,7 +138,7 @@ src/
 
 ## 10-Hour Implementation Plan
 
-Here is a detailed breakdown of the development process, estimated to take 13 hours:
+Here is a detailed breakdown of the development process, estimated to take 12 hours:
 
 - **Hour 1: Project Setup & Configuration (1 hour)**
   - Initialize React project with Vite and TypeScript.
@@ -136,10 +147,10 @@ Here is a detailed breakdown of the development process, estimated to take 13 ho
   - Configure Jest and React Testing Library for unit testing.
 
 - **Hour 2-3: Core UI Components (2 hours)**
-  - Develop `TripTypeSwitch` component for one-way/return selection.
-  - Create `DatePicker` component using `react-datepicker` for selecting dates.
+  - Implement trip type selection using a standard `<select>` element.
+  - Integrate `react-datepicker` for selecting dates.
   - Build `PassengerSelector` component for managing adults, children, and infants.
-  - Develop `SearchButton` component with loading and disabled states.
+  - Develop a reusable `Button` component with loading and disabled states.
 
 - **Hour 4-5: API Integration & State Management (3 hours)**
   - Set up Redux Toolkit store and an `airportSlice`.
@@ -150,7 +161,7 @@ Here is a detailed breakdown of the development process, estimated to take 13 ho
 
 - **Hour 6-7: Main View & Form Logic (3 hours)**
   - Assemble the main `FlightSearchForm.tsx` view by combining all the smaller components.
-  - Implement the main form logic using React Hooks (`useState`, `useSelector`, `useDispatch`).
+  - Implement the main form logic using custom hooks (`useFlightSearchForm`).
   - Add form validation to ensure all required fields are filled.
   - Manage the state for trip type, dates, passengers, and selected airports.
 
@@ -165,7 +176,7 @@ Here is a detailed breakdown of the development process, estimated to take 13 ho
   - Simulate a search action and display a summary of the selected criteria.
   - Refine state management for search status (e.g., `searching`, `succeeded`, `failed`).
 
-- **Hour 10: Final Touches & Documentation (2 hour)**
+- **Hour 10: Final Touches & Documentation (1 hour)**
   - Write unit tests for key components and Redux logic.
   - Perform final testing and bug fixes.
   - Write and finalize the `README.md` documentation.

@@ -26,23 +26,20 @@ export const formatPassengerCount = (
   return segments.join(', ');
 };
 
+import { format } from 'date-fns';
+
 export const getTotalPassengers = (
   adults: number,
   children: number,
   infants: number
 ): string => {
   const total = adults + children + infants;
-  return pluralize(total, 'Traveller', 'Travellers');
+  return pluralize(total, 'Traveler', 'Travelers');
 };
 
 export const formatDate = (date: Date | undefined | null): string => {
   if (!date) return '';
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
+  return format(date, 'EEE, dd MMM');
 };
 
 export const getAirportName = (

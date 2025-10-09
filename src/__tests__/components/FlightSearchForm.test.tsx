@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -30,6 +30,19 @@ const createTestStore = (airports: Airport[] = mockAirports, loading = false, er
 };
 
 describe('FlightSearchForm', () => {
+  beforeEach(() => {
+    const portalRoot = document.createElement('div');
+    portalRoot.id = 'portal-root';
+    document.body.appendChild(portalRoot);
+  });
+
+  afterEach(() => {
+    const portalRoot = document.getElementById('portal-root');
+    if (portalRoot) {
+      document.body.removeChild(portalRoot);
+    }
+  });
+
   it('renders the form with initial values', () => {
     const store = createTestStore();
     render(
@@ -41,7 +54,7 @@ describe('FlightSearchForm', () => {
     expect(screen.getByLabelText('From')).toBeInTheDocument();
     expect(screen.getByLabelText('To')).toBeInTheDocument();
     expect(screen.getByLabelText('Depart')).toBeInTheDocument();
-    expect(screen.getByText('Travellers')).toBeInTheDocument();
+    expect(screen.getByText('Travelers')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
   });
 
@@ -53,7 +66,7 @@ describe('FlightSearchForm', () => {
       </Provider>
     );
 
-    expect(screen.getByText('Loading airports...')).toBeInTheDocument();
+    expect(screen.getByTestId('skeleton')).toBeInTheDocument();
   });
 
   it('shows an error message if fetching airports fails', () => {
@@ -76,11 +89,14 @@ describe('FlightSearchForm', () => {
       </Provider>
     );
 
+    await waitFor(() => expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument());
+
     const fromInput = screen.getByLabelText('From');
     await user.type(fromInput, 'JFK');
     await user.click(await screen.findByText('JFK - John F Kennedy'));
 
     const toInput = screen.getByLabelText('To');
+    await waitFor(() => expect(toInput).toBeEnabled());
     await user.type(toInput, 'LAX');
     await user.click(await screen.findByText('LAX - Los Angeles'));
 
@@ -96,11 +112,14 @@ describe('FlightSearchForm', () => {
       </Provider>
     );
 
+    await waitFor(() => expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument());
+
     const fromInput = screen.getByLabelText('From');
     await user.type(fromInput, 'JFK');
     await user.click(await screen.findByText('JFK - John F Kennedy'));
 
     const toInput = screen.getByLabelText('To');
+    await waitFor(() => expect(toInput).toBeEnabled());
     await user.type(toInput, 'LAX');
     await user.click(await screen.findByText('LAX - Los Angeles'));
 
@@ -123,7 +142,9 @@ describe('FlightSearchForm', () => {
       </Provider>
     );
 
-    const passengerButton = screen.getByText('Travellers');
+    await waitFor(() => expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument());
+
+    const passengerButton = screen.getByText('Travelers');
     await user.click(passengerButton);
     expect(screen.getByText('Adults')).toBeInTheDocument();
 

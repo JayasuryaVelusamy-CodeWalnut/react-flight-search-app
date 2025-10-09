@@ -1,152 +1,94 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PassengerSelector from '../../components/PassengerSelector';
+import type { PassengerSelectorProps } from '../../components/PassengerSelector';
 import type { Passenger } from '../../types/Flight';
 
 describe('PassengerSelector', () => {
+  const mockOnChange = jest.fn();
+
   const defaultPassengers: Passenger = {
     adults: 1,
     children: 0,
-    infants: 0
+    infants: 0,
   };
 
-  const mockOnChange = jest.fn();
+  const renderComponent = (
+    additionalProps: Partial<PassengerSelectorProps> = {}
+  ) => {
+    const props: PassengerSelectorProps = {
+      passengers: defaultPassengers,
+      onChange: mockOnChange,
+      ...additionalProps,
+    };
+    return render(<PassengerSelector {...props} />);
+  };
 
   beforeEach(() => {
     mockOnChange.mockClear();
   });
 
-  it('renders with initial values', () => {
-    render(<PassengerSelector value={defaultPassengers} onChange={mockOnChange} />);
+  it('renders all passenger types with labels and descriptions', () => {
+    renderComponent();
 
-    expect(screen.getByText('Adults')).toBeInTheDocument();
-    expect(screen.getByText('Children')).toBeInTheDocument();
-    expect(screen.getByText('Infants')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Adults' })).toBeInTheDocument();
     expect(screen.getByText('Age 12+')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Children' })
+    ).toBeInTheDocument();
     expect(screen.getByText('Age 2-11')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Infants' })
+    ).toBeInTheDocument();
     expect(screen.getByText('Under 2')).toBeInTheDocument();
   });
 
-  it('increments adult count when + button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<PassengerSelector value={defaultPassengers} onChange={mockOnChange} />);
+  it.each([
+    { type: 'Adults', id: 'adults' },
+    { type: 'Children', id: 'children' },
+    { type: 'Infants', id: 'infants' },
+  ])('increments $type count when + button is clicked', async ({ type, id }) => {
+    renderComponent();
 
-    const adultSection = screen.getByText('Adults').closest('div')?.parentElement;
-    const incrementButton = adultSection?.querySelectorAll('button')[1];
-    
-    if (incrementButton) {
-      await user.click(incrementButton);
+    const incrementButton = screen.getByLabelText(`Increment ${type}`);
+    await userEvent.click(incrementButton);
+
+    expect(mockOnChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        [id]: defaultPassengers[id as keyof Passenger] + 1,
+      })
+    );
+  });
+
+  it.each([
+    { type: 'Adults', id: 'adults', initial: 2 },
+    { type: 'Children', id: 'children', initial: 2 },
+    { type: 'Infants', id: 'infants', initial: 2 },
+  ])(
+    'decrements $type count when - button is clicked and above min',
+    async ({ type, initial, id }) => {
+      renderComponent({ passengers: { ...defaultPassengers, [id]: initial } });
+
+      const decrementButton = screen.getByLabelText(`Decrement ${type}`);
+      await userEvent.click(decrementButton);
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({ [id]: initial - 1 })
+      );
     }
+  );
 
-    expect(mockOnChange).toHaveBeenCalledWith({
-      adults: 2,
-      children: 0,
-      infants: 0
-    });
-  });
+  it.each([
+    { type: 'Adults', id: 'adults', min: 1 },
+    { type: 'Children', id: 'children', min: 0 },
+    { type: 'Infants', id: 'infants', min: 0 },
+  ])(
+    'disables the - button for $type when at the minimum value',
+    ({ type, id, min }) => {
+      renderComponent({ passengers: { ...defaultPassengers, [id]: min } });
 
-  it('decrements adult count when - button is clicked', async () => {
-    const user = userEvent.setup();
-    const passengers: Passenger = { adults: 2, children: 0, infants: 0 };
-    render(<PassengerSelector value={passengers} onChange={mockOnChange} />);
-
-    const adultSection = screen.getByText('Adults').closest('div')?.parentElement;
-    const decrementButton = adultSection?.querySelectorAll('button')[0];
-    
-    if (decrementButton) {
-      await user.click(decrementButton);
+      const decrementButton = screen.getByLabelText(`Decrement ${type}`);
+      expect(decrementButton).toBeDisabled();
     }
-
-    expect(mockOnChange).toHaveBeenCalledWith({
-      adults: 1,
-      children: 0,
-      infants: 0
-    });
-  });
-
-  it('does not allow adults to go below 1', async () => {
-    render(<PassengerSelector value={defaultPassengers} onChange={mockOnChange} />);
-
-    const adultSection = screen.getByText('Adults').closest('div')?.parentElement;
-    const decrementButton = adultSection?.querySelectorAll('button')[0];
-    
-    expect(decrementButton).toBeDisabled();
-  });
-
-  it('increments children count', async () => {
-    const user = userEvent.setup();
-    render(<PassengerSelector value={defaultPassengers} onChange={mockOnChange} />);
-
-    const childrenSection = screen.getByText('Children').closest('div')?.parentElement;
-    const incrementButton = childrenSection?.querySelectorAll('button')[1];
-    
-    if (incrementButton) {
-      await user.click(incrementButton);
-    }
-
-    expect(mockOnChange).toHaveBeenCalledWith({
-      adults: 1,
-      children: 1,
-      infants: 0
-    });
-  });
-
-  it('decrements children count', async () => {
-    const user = userEvent.setup();
-    const passengers: Passenger = { adults: 1, children: 2, infants: 0 };
-    render(<PassengerSelector value={passengers} onChange={mockOnChange} />);
-
-    const childrenSection = screen.getByText('Children').closest('div')?.parentElement;
-    const decrementButton = childrenSection?.querySelectorAll('button')[0];
-    
-    if (decrementButton) {
-      await user.click(decrementButton);
-    }
-
-    expect(mockOnChange).toHaveBeenCalledWith({
-      adults: 1,
-      children: 1,
-      infants: 0
-    });
-  });
-
-  it('does not allow children to go below 0', async () => {
-    render(<PassengerSelector value={defaultPassengers} onChange={mockOnChange} />);
-
-    const childrenSection = screen.getByText('Children').closest('div')?.parentElement;
-    const decrementButton = childrenSection?.querySelectorAll('button')[0];
-    
-    expect(decrementButton).toBeDisabled();
-  });
-
-  it('increments infants count', async () => {
-    const user = userEvent.setup();
-    render(<PassengerSelector value={defaultPassengers} onChange={mockOnChange} />);
-
-    const infantsSection = screen.getByText('Infants').closest('div')?.parentElement;
-    const incrementButton = infantsSection?.querySelectorAll('button')[1];
-    
-    if (incrementButton) {
-      await user.click(incrementButton);
-    }
-
-    expect(mockOnChange).toHaveBeenCalledWith({
-      adults: 1,
-      children: 0,
-      infants: 1
-    });
-  });
-
-  it('displays correct counts for multiple passenger types', () => {
-    const passengers: Passenger = { adults: 2, children: 1, infants: 1 };
-    render(<PassengerSelector value={passengers} onChange={mockOnChange} />);
-
-    const adultSection = screen.getByText('Adults').closest('div')?.parentElement;
-    const childrenSection = screen.getByText('Children').closest('div')?.parentElement;
-    const infantsSection = screen.getByText('Infants').closest('div')?.parentElement;
-
-    expect(adultSection?.textContent).toContain('2');
-    expect(childrenSection?.textContent).toContain('1');
-    expect(infantsSection?.textContent).toContain('1');
-  });
+  );
 });

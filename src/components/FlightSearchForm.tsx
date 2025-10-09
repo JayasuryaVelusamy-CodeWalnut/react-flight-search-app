@@ -1,73 +1,66 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import type { Airport } from '../types/Airport';
-import type { FlightSearchCriteria } from '../types/Flight';
 import AirportSelect from './AirportSelect';
 import PassengerSelector from './PassengerSelector';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchAirports, selectAirports, selectLoading, selectError, makeSelectFilteredDestinations } from '../store/slices/airportSlice';
+import Portal from './Portal';
+import Skeleton from './Skeleton';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { selectAirports, selectLoading, selectError, makeSelectFilteredDestinations, fetchAirports } from '../store/slices/airportSlice';
 import { formatPassengerCount, formatDate, getAirportName } from '../utils/format';
+import { useFetchAirports } from '../hooks/useFetchAirports';
+import { useClickOutside } from '../hooks/useClickOutside';
+import { useFlightSearchForm } from '../hooks/useFlightSearchForm';
 
 const FlightSearchForm: React.FC = () => {
   const dispatch = useAppDispatch();
   const airports = useAppSelector(selectAirports);
   const isLoading = useAppSelector(selectLoading);
   const error = useAppSelector(selectError);
+  const [isErrorVisible, setIsErrorVisible] = useState(!!error);
+
+  useEffect(() => {
+    setIsErrorVisible(!!error);
+  }, [error]);
+
+  useFetchAirports();
   const [isPassengerSelectorOpen, setIsPassengerSelectorOpen] = useState(false);
-  const passengerSelectorRef = useRef<HTMLDivElement>(null);
-  const [searchCriteria, setSearchCriteria] = useState<FlightSearchCriteria>({
-    tripType: 'oneWay',
-    origin: '',
-    destination: '',
-    departDate: new Date(),
-    returnDate: undefined,
-    passengers: {
-      adults: 1,
-      children: 0,
-      infants: 0
-    }
-  });
-
-  const [showSummary, setShowSummary] = useState(false);
+  const [passengerSelectorPosition, setPassengerSelectorPosition] = useState({ top: 0, left: 0 });
+  const passengerButtonRef = useRef<HTMLButtonElement>(null);
+  const passengerSelectorRef = useClickOutside(() => {
+    setIsPassengerSelectorOpen(false);
+  }, passengerButtonRef);
 
   useEffect(() => {
-    if (airports.length === 0 && !error) {
-      dispatch(fetchAirports({}));
-    }
-  }, [dispatch, airports.length, error]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (passengerSelectorRef.current && !passengerSelectorRef.current.contains(event.target as Node)) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
         setIsPassengerSelectorOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isPassengerSelectorOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
 
-  const handleSearch = () => {
-    setShowSummary(true);
-  };
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isPassengerSelectorOpen]);
 
-  const handleOriginChange = (airport: Airport) => {
-    setSearchCriteria(prev => ({
-      ...prev,
-      origin: airport.code,
-      destination: ''
-    }));
-  };
+  const {
+    searchCriteria,
+    errors,
+    showSummary,
+    handleSearch,
+    handleReset,
+    handleOriginChange,
+    handleDestinationChange,
+    handleDateChange,
+    handleTripTypeChange,
+    handlePassengerChange,
+  } = useFlightSearchForm();
 
-  const handleDestinationChange = (airport: Airport) => {
-    setSearchCriteria(prev => ({
-      ...prev,
-      destination: airport.code
-    }));
-  };
-
-  const selectDestinationsForOrigin = React.useMemo(
+  const selectDestinationsForOrigin = useMemo(
     () => makeSelectFilteredDestinations(),
     []
   );
@@ -79,16 +72,20 @@ const FlightSearchForm: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col items-center space-y-6">
-      {error && (
-        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+    <div className="flex flex-col items-center gap-6">
+      {isErrorVisible && (
+        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex items-center gap-4">
           <p>{error}</p>
+          <button onClick={() => dispatch(fetchAirports({ forceRefresh: true }))} className="text-sm font-semibold underline">
+            Retry
+          </button>
+          <button onClick={() => setIsErrorVisible(false)} className="text-lg font-bold">
+            &times;
+          </button>
         </div>
       )}
       {isLoading ? (
-        <div className="bg-white rounded-xl shadow-lg p-6 w-full flex justify-center">
-          <div className="text-gray-600">Loading airports...</div>
-        </div>
+        <Skeleton />
       ) : (
         <form
           className="bg-white rounded-xl shadow-lg flex flex-col lg:flex-row lg:items-center divide-y lg:divide-y-0 lg:divide-x divide-gray-200 w-full"
@@ -103,11 +100,8 @@ const FlightSearchForm: React.FC = () => {
               id="trip-type"
               className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
               value={searchCriteria.tripType}
-              onChange={(e) => setSearchCriteria(prev => ({ 
-                ...prev, 
-                tripType: e.target.value as 'oneWay' | 'return',
-                returnDate: e.target.value === 'oneWay' ? undefined : prev.returnDate
-              }))}
+              onChange={handleTripTypeChange}
+              aria-controls="return-date-container"
             >
               <option value="oneWay">One way</option>
               <option value="return">Return</option>
@@ -121,6 +115,7 @@ const FlightSearchForm: React.FC = () => {
               onChange={handleOriginChange}
               placeholder="Country, city or airport"
             />
+            {errors.origin && <p className="text-red-500 text-xs mt-1">{errors.origin}</p>}
           </div>
 
           <div className="p-4 w-full lg:w-auto">
@@ -132,6 +127,7 @@ const FlightSearchForm: React.FC = () => {
               allowedAirports={allowedDestinations}
               disabled={!searchCriteria.origin}
             />
+            {errors.destination && <p className="text-red-500 text-xs mt-1">{errors.destination}</p>}
           </div>
 
           <div className="px-6 py-4 flex flex-col md:flex-row items-center gap-4">
@@ -140,15 +136,7 @@ const FlightSearchForm: React.FC = () => {
               <DatePicker
                 id="depart-date"
                 selected={searchCriteria.departDate}
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    setSearchCriteria(prev => ({
-                      ...prev,
-                      departDate: date,
-                      returnDate: prev.returnDate && date > prev.returnDate ? undefined : prev.returnDate
-                    }));
-                  }
-                }}
+                onChange={(date: Date | null) => handleDateChange(date, 'departDate')}
                 minDate={new Date()}
                 className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
                 dateFormat="EEE, dd MMM"
@@ -159,27 +147,38 @@ const FlightSearchForm: React.FC = () => {
               <div className="flex flex-col w-full md:w-auto">
                 <label htmlFor="return-date" className="text-gray-500 text-sm font-medium">Return</label>
                 <DatePicker
-                  id="return-date"
-                  selected={searchCriteria.returnDate}
-                  onChange={(date: Date | null) => setSearchCriteria(prev => ({
-                    ...prev,
-                    returnDate: date || undefined
-                  }))}
+                id="return-date"
+                selected={searchCriteria.returnDate}
+                onChange={(date: Date | null) => handleDateChange(date, 'returnDate')}
                   minDate={searchCriteria.departDate}
                   placeholderText="Select date"
                   className="w-full bg-transparent border-none focus:outline-none focus:ring-0"
                   dateFormat="EEE, dd MMM"
                 />
+                {errors.returnDate && <p className="text-red-500 text-xs mt-1">{errors.returnDate}</p>}
               </div>
             )}
           </div>
 
-          <div className="px-6 py-4 flex flex-col relative" ref={passengerSelectorRef}>
+          <div className="px-6 py-4 flex flex-col relative">
             <button
+              type="button"
+              ref={passengerButtonRef}
               className="text-left"
-              onClick={() => setIsPassengerSelectorOpen(!isPassengerSelectorOpen)}
+              onClick={() => {
+                if (passengerButtonRef.current) {
+                  const rect = passengerButtonRef.current.getBoundingClientRect();
+                  setPassengerSelectorPosition({
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + window.scrollX,
+                  });
+                }
+                setIsPassengerSelectorOpen(!isPassengerSelectorOpen);
+              }}
+              aria-expanded={isPassengerSelectorOpen}
+              aria-controls="passenger-selector"
             >
-              <span className="text-gray-500 text-sm font-medium">Travellers</span>
+              <span className="text-gray-500 text-sm font-medium">Travelers</span>
               <span className="block text-black font-semibold">
                 {formatPassengerCount(
                   searchCriteria.passengers.adults,
@@ -190,18 +189,26 @@ const FlightSearchForm: React.FC = () => {
             </button>
 
             {isPassengerSelectorOpen && (
-              <div className="absolute top-full left-0 mt-2 z-50">
-                <PassengerSelector
-                  value={searchCriteria.passengers}
-                  onChange={(passengers) => {
-                    setSearchCriteria(prev => ({ ...prev, passengers }));
+              <Portal>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: `${passengerSelectorPosition.top}px`,
+                    left: `${passengerSelectorPosition.left}px`,
+                    zIndex: 50,
                   }}
-                />
-              </div>
+                >
+                  <PassengerSelector
+                    ref={passengerSelectorRef}
+                    passengers={searchCriteria.passengers}
+                    onChange={handlePassengerChange}
+                  />
+                </div>
+              </Portal>
             )}
           </div>
 
-          <div className="p-4 lg:px-4 w-full lg:w-auto">
+          <div className="p-4 lg:px-4 w-full lg:w-auto flex items-center gap-4">
             <button 
               className="bg-[#0061ff] hover:bg-[#0051d1] text-white font-semibold rounded-xl px-6 py-3 transition disabled:opacity-50 w-full"
               onClick={handleSearch}
@@ -210,12 +217,20 @@ const FlightSearchForm: React.FC = () => {
             >
               Search
             </button>
+            <button
+              type="button"
+              className="text-gray-500 hover:text-gray-700 font-semibold px-4 py-3 transition"
+              onClick={handleReset}
+            >
+              Reset
+            </button>
           </div>
         </form>
       )}
 
       {showSummary && (
-        <div className="bg-white rounded-xl shadow-md p-6 max-w-6xl w-full">
+        <div className="bg-white rounded-xl shadow-md p-6 max-w-6xl w-full" role="region" aria-labelledby="summary-heading">
+          <h2 id="summary-heading" className="sr-only">Flight Search Summary</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div>
               <p className="text-sm text-gray-500">Trip Type</p>

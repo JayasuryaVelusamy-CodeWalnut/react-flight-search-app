@@ -1,119 +1,91 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import airportReducer from '../../../src/store/slices/airportSlice';
 import AirportSelect from '../../../src/components/AirportSelect';
+import type { Airport } from '../../../src/types/Airport';
+import type { RootState } from '../../../src/store';
 
-const mockStore = configureStore({
-  reducer: {
-    airports: airportReducer
-  }
-});
+const mockAirports: Airport[] = [
+  { code: 'JFK', name: 'John F Kennedy', countryCode: 'US', currency: 'USD', restrictedOnDeparture: false, restrictedOnDestination: false, connections: [] },
+  { code: 'LHR', name: 'London Heathrow', countryCode: 'GB', currency: 'GBP', restrictedOnDeparture: false, restrictedOnDestination: false, connections: [] },
+  { code: 'CDG', name: 'Charles de Gaulle', countryCode: 'FR', currency: 'EUR', restrictedOnDeparture: false, restrictedOnDestination: false, connections: [] },
+];
 
-describe('AirportSelect', () => {
+const renderComponent = (
+  props: Partial<React.ComponentProps<typeof AirportSelect>> = {},
+  preloadedState: Partial<RootState> = {}
+) => {
+  const store = configureStore({
+    reducer: {
+      airports: airportReducer,
+    },
+    preloadedState: {
+      airports: {
+        airports: mockAirports,
+        loading: false,
+        error: null,
+        filteredDestinations: [],
+        lastFetched: Date.now(),
+        ...preloadedState.airports,
+      },
+    },
+  });
+
   const defaultProps = {
     label: 'Test Airport',
     value: '',
     onChange: jest.fn(),
-    placeholder: 'Select an airport'
+    placeholder: 'Select an airport',
   };
 
-  it('renders with basic props', () => {
-    render(
-      <Provider store={mockStore}>
-        <AirportSelect {...defaultProps} />
-      </Provider>
-    );
+  return render(
+    <Provider store={store}>
+      <AirportSelect {...defaultProps} {...props} />
+    </Provider>
+  );
+};
 
+describe('AirportSelect', () => {
+  it('renders with default props', () => {
+    renderComponent();
     expect(screen.getByLabelText('Test Airport')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Select an airport')).toBeInTheDocument();
+    expect(screen.getByText('Select an airport')).toBeInTheDocument();
   });
 
-  it('displays loading state', () => {
-    const loadingStore = configureStore({
-      reducer: {
-        airports: airportReducer
-      },
-      preloadedState: {
-        airports: {
-          airports: [],
-          loading: true,
-          error: null,
-          filteredDestinations: [],
-          lastFetched: null
-        }
-      }
-    });
-
-    render(
-      <Provider store={loadingStore}>
-        <AirportSelect {...defaultProps} />
-      </Provider>
-    );
-
-    expect(screen.getByPlaceholderText('Loading airports...')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeDisabled();
+  it('displays loading state and disables input', () => {
+    renderComponent({}, { airports: { airports: [], loading: true, error: null, filteredDestinations: [], lastFetched: null } });
+    expect(screen.getByText('Loading airports...')).toBeInTheDocument();
+    expect(screen.getByLabelText('Test Airport')).toBeDisabled();
   });
 
-  it('filters airports based on search term', async () => {
-    const mockAirports = [
-      { code: 'JFK', name: 'John F Kennedy', countryCode: 'US', currency: 'USD', restrictedOnDeparture: false, restrictedOnDestination: false, connections: [] },
-      { code: 'LHR', name: 'London Heathrow', countryCode: 'GB', currency: 'GBP', restrictedOnDeparture: false, restrictedOnDestination: false, connections: [] }
-    ];
+  it('displays error state but remains enabled', () => {
+    renderComponent({}, { airports: { airports: [], loading: false, error: 'Failed to load', filteredDestinations: [], lastFetched: null } });
+    expect(screen.getByText('Select an airport')).toBeInTheDocument();
+    expect(screen.getByLabelText('Test Airport')).toBeEnabled();
+  });
 
-    const storeWithAirports = configureStore({
-      reducer: {
-        airports: airportReducer
-      },
-      preloadedState: {
-        airports: {
-          airports: mockAirports,
-          loading: false,
-          error: null,
-          filteredDestinations: [],
-          lastFetched: Date.now()
-        }
-      }
-    });
-
-    render(
-      <Provider store={storeWithAirports}>
-        <AirportSelect {...defaultProps} />
-      </Provider>
-    );
-
-    const input = screen.getByRole('textbox');
-    fireEvent.change(input, { target: { value: 'JFK' } });
-    fireEvent.focus(input);
-
-    const option = await screen.findByText('JFK - John F Kennedy');
-    expect(option).toBeInTheDocument();
+  it('filters airports based on user input', async () => {
+    renderComponent();
+    const input = screen.getByLabelText('Test Airport');
+    await userEvent.type(input, 'JFK');
+    expect(await screen.findByText('JFK - John F Kennedy')).toBeInTheDocument();
     expect(screen.queryByText('LHR - London Heathrow')).not.toBeInTheDocument();
   });
 
-  it('shows error state when there is an error in Redux store', () => {
-    const storeWithError = configureStore({
-      reducer: {
-        airports: airportReducer
-      },
-      preloadedState: {
-        airports: {
-          airports: [],
-          loading: false,
-          error: 'Failed to load airports',
-          filteredDestinations: [],
-          lastFetched: null
-        }
-      }
-    });
+  it('calls onChange with the selected airport object', async () => {
+    const mockOnChange = jest.fn();
+    renderComponent({ onChange: mockOnChange });
+    const input = screen.getByLabelText('Test Airport');
+    await userEvent.type(input, 'LHR');
+    const option = await screen.findByText('LHR - London Heathrow');
+    await userEvent.click(option);
+    expect(mockOnChange).toHaveBeenCalledWith(mockAirports[1]);
+  });
 
-    render(
-      <Provider store={storeWithError}>
-        <AirportSelect {...defaultProps} />
-      </Provider>
-    );
-
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeEnabled();
+  it('is disabled when the disabled prop is true', () => {
+    renderComponent({ disabled: true });
+    expect(screen.getByLabelText('Test Airport')).toBeDisabled();
   });
 });

@@ -42,18 +42,18 @@ describe('formatPassengerCount', () => {
 
 describe('getTotalPassengers', () => {
   it('returns singular for one passenger', () => {
-    expect(getTotalPassengers(1, 0, 0)).toBe('1 Traveller');
+    expect(getTotalPassengers(1, 0, 0)).toBe('1 Traveler');
   });
 
   it('returns plural for multiple passengers', () => {
-    expect(getTotalPassengers(2, 1, 1)).toBe('4 Travellers');
+    expect(getTotalPassengers(2, 1, 1)).toBe('4 Travelers');
   });
 
   it('handles zero case', () => {
-    expect(getTotalPassengers(0, 0, 0)).toBe('0 Travellers');
+    expect(getTotalPassengers(0, 0, 0)).toBe('0 Travelers');
   });
 
   it('includes infants in total count', () => {
-    expect(getTotalPassengers(1, 0, 2)).toBe('3 Travellers');
+    expect(getTotalPassengers(1, 0, 2)).toBe('3 Travelers');
   });
 });
